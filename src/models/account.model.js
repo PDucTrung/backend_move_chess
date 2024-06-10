@@ -4,6 +4,7 @@ const AccountSchema = new mongoose.Schema({
   email: { type: String, unique: true },
   username: { type: String, unique: true },
   password: { type: String },
+  isVerified: { type: Boolean, default: false },
   wallets: [
     {
       chain: { type: String },
