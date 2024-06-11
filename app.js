@@ -22,6 +22,10 @@ const config = {
   baseURL: auth0Config.AUTH0_BASE_URL,
   clientID: auth0Config.AUTH0_CLIENT_ID,
   issuerBaseURL: auth0Config.AUTH0_ISSUER_BASE_URL,
+  routes: {
+    login: false,
+    // postLogoutRedirect: `${process.env.API_BASE_URL}/logout`,
+  },
 };
 
 const app = express();
@@ -39,13 +43,11 @@ app.use(auth(config));
 // ROUTERS
 app.get("/", (req, res) => {
   // res.send("Wellcome Move Chess!");
-  res.send(req.oidc.isAuthenticated() ? "Logged in" : "Logged out");
+  const isLogin = req.oidc.isAuthenticated();
+  res.send(
+    isLogin ? "Logged in" : "Logged out",
+  );
 });
-
-app.get('/callback', (req, res) => {
-  res.redirect('/');
-});
-
 
 require("./src/routes/auth.routes.js")(app);
 require("./src/routes/user.routes.js")(app);
