@@ -2,17 +2,27 @@ require("dotenv").config();
 let mongoose = require("mongoose");
 const cors = require("cors");
 const bodyParser = require("body-parser");
-const cookieParser = require('cookie-parser');
+const cookieParser = require("cookie-parser");
 const express = require("express");
 const rateLimit = require("express-rate-limit");
 const dbConfig = require("./src/config/db.config.js");
-
 const limiter = rateLimit({
   windowMs: 60 * 1000, // 1 minutes
   max: 1000, // Limit each IP to 60 requests per `window` (here, per 1 minute)
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 });
+const { auth } = require("express-openid-connect");
+// Auth0 config
+const auth0Config = require("./src/config/auth0.config.js");
+const config = {
+  authRequired: false,
+  auth0Logout: true,
+  secret: auth0Config.AUTH0_SECRET,
+  baseURL: auth0Config.AUTH0_BASE_URL,
+  clientID: auth0Config.AUTH0_CLIENT_ID,
+  issuerBaseURL: auth0Config.AUTH0_ISSUER_BASE_URL,
+};
 
 const app = express();
 
@@ -23,9 +33,20 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 // Apply the rate limiting middleware to all requests
 app.use(limiter);
+// Apply auth0
+app.use(auth(config));
 
 // ROUTERS
-app.get("/", (req, res) => res.send("Wellcome Move Chess!"));
+app.get("/", (req, res) => {
+  // res.send("Wellcome Move Chess!");
+  res.send(req.oidc.isAuthenticated() ? "Logged in" : "Logged out");
+});
+
+app.get('/callback', (req, res) => {
+  res.redirect('/');
+});
+
+
 require("./src/routes/auth.routes.js")(app);
 require("./src/routes/user.routes.js")(app);
 

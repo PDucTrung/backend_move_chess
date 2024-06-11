@@ -8,7 +8,7 @@ const { sendEmail } = require("../utils/emailService");
 const { validatePassword } = require("../utils/utils");
 
 const jwtConfig = require("../config/jwt.config");
-const API_URL = process.env.API_URL;
+const API_BASE_URL = process.env.API_BASE_URL;
 const JWT_ACCESS_SECRET = jwtConfig.JWT_ACCESS_SECRET;
 const JWT_REFRESH_SECRET = jwtConfig.JWT_REFRESH_SECRET;
 const EMAIL_SECRET = jwtConfig.EMAIL_SECRET;
@@ -47,7 +47,7 @@ exports.register = async (req, res) => {
     const token = jwt.sign({ userId: user._id }, EMAIL_SECRET, {
       expiresIn: "1d",
     });
-    const url = `${API_URL}/api/auth/confirmation/${token}`;
+    const url = `${API_BASE_URL}/api/auth/confirmation/${token}`;
 
     await sendEmail(
       email,
@@ -100,6 +100,80 @@ exports.login = async (req, res) => {
   }
 };
 
+exports.loginGoogle = async (req, res) => {
+  // Check if the user is authenticated
+  const isLogin = req.oidc.isAuthenticated();
+  if (!isLogin) {
+    // Redirect to Google login
+    res.oidc.login({
+      authorizationParams: {
+        connection: "google-oauth2",
+      },
+    });
+  }
+
+  // try {
+  //   // Extract user information after successful authentication
+  //   const { email, sub } = req.oidc.user;
+  //   let user = await User.findOne({ email });
+
+  //   if (!user) {
+  //     // If user doesn't exist, create a new one
+  //     user = new User({
+  //       email,
+  //       username: email.split("@")[0],
+  //       oauthProviders: [
+  //         {
+  //           provider: "google",
+  //           providerId: sub,
+  //         },
+  //       ],
+  //     });
+  //     await user.save();
+  //   } else {
+  //     // Update user's oauthProviders if google not already added
+  //     const googleProvider = user.oauthProviders.find(
+  //       (provider) => provider.provider === "google"
+  //     );
+  //     if (!googleProvider) {
+  //       user.oauthProviders.push({ provider: "google", providerId: sub });
+  //       await user.save();
+  //     }
+  //   }
+
+  //   // if (!user.isVerified) {
+  //   //   return res.status(400).send("Please verify your email first");
+  //   // }
+  //   if (!user.isVerified) {
+  //     user.isVerified = true; // Automatically verify the user if logging in with Google
+  //     await user.save();
+  //   }
+
+  //   const accessToken = generateAccessToken(user._id);
+  //   const refreshToken = generateRefreshToken(user._id);
+
+  //   await new Token({ userId: user._id, token: refreshToken }).save();
+
+  //   res.cookie("refreshToken", refreshToken, { httpOnly: true, secure: true });
+  //   res.status(200).json({ accessToken });
+  // } catch (err) {
+  //   res.status(400).send("Error logging in with Google");
+  // }
+};
+
+exports.loginFacebook = async (req, res) => {
+  const isLogin = req.oidc.isAuthenticated();
+  if (!isLogin)
+    res.oidc.login({
+      authorizationParams: {
+        connection: "facebook",
+      },
+    });
+  // const data = JSON.stringify(req.oidc.user);
+  // console.log({ data });
+  // res.send(data);
+};
+
 exports.refreshToken = async (req, res) => {
   const refreshToken = req.cookies.refreshToken;
   if (!refreshToken) {
@@ -126,11 +200,12 @@ exports.logout = async (req, res) => {
     await Token.findOneAndDelete({ token: refreshToken });
     res.clearCookie("refreshToken");
   }
+  res.oidc.logout();
   res.status(200).send("Logged out");
 };
 
 exports.forgotPassword = async (req, res) => {
-  const { email } = req.body;
+  const { email, redirectUrl } = req.body;
   try {
     const user = await User.findOne({ email });
     if (!user) {
@@ -140,7 +215,7 @@ exports.forgotPassword = async (req, res) => {
     const token = jwt.sign({ userId: user._id }, JWT_ACCESS_SECRET, {
       expiresIn: "1h",
     });
-    const url = `${API_URL}/api/auth/reset-password/${token}`;
+    const url = `${redirectUrl || API_BASE_URL}/reset-password/${token}`;
     await sendEmail(
       email,
       "Password Reset",
@@ -165,14 +240,3 @@ exports.resetPassword = async (req, res) => {
   }
 };
 
-exports.getProfile = async (req, res) => {
-  try {
-    const user = await User.findById(req.user.userId).select("-password");
-    if (!user) {
-      return res.status(404).send("User not found");
-    }
-    res.json(user);
-  } catch (err) {
-    res.status(500).send("Server error");
-  }
-};
