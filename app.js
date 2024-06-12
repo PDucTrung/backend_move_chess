@@ -12,6 +12,8 @@ const limiter = rateLimit({
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 });
+const { graphqlHTTP } = require('express-graphql');
+const schema = require('./src/graphql/schema');
 const passport = require("passport");
 const session = require("express-session");
 require("./src/services/passport.js");
@@ -38,6 +40,13 @@ app.use(
 // initialize passport and session
 app.use(passport.initialize());
 app.use(passport.session());
+
+// GraphQL endpoint
+app.use('/graphql', graphqlHTTP((req, res) => ({
+  schema: schema,
+  graphiql: true,
+  context: { req, res },
+})));
 
 // ROUTERS
 app.get("/", (req, res) => {

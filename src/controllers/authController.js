@@ -110,8 +110,8 @@ exports.callback = async (req, res) => {
   await new Token({ userId: req.user._id, token: refreshToken }).save();
 
   res.cookie("refreshToken", refreshToken, { httpOnly: true, secure: true });
-  // res.status(200).json({ accessToken });
-  res.redirect(`${process.env.API_BASE_URL}`);
+  res.status(200).json({ accessToken });
+  // res.redirect(`${process.env.API_BASE_URL}`);
 };
 
 exports.refreshToken = async (req, res) => {
