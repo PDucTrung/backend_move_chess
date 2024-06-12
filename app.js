@@ -12,21 +12,9 @@ const limiter = rateLimit({
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 });
-const { auth } = require("express-openid-connect");
-// Auth0 config
-const auth0Config = require("./src/config/auth0.config.js");
-const config = {
-  authRequired: false,
-  auth0Logout: true,
-  secret: auth0Config.AUTH0_SECRET,
-  baseURL: auth0Config.AUTH0_BASE_URL,
-  clientID: auth0Config.AUTH0_CLIENT_ID,
-  issuerBaseURL: auth0Config.AUTH0_ISSUER_BASE_URL,
-  routes: {
-    login: false,
-    // postLogoutRedirect: `${process.env.API_BASE_URL}/logout`,
-  },
-};
+const passport = require("passport");
+const session = require("express-session");
+require("./src/services/passport.js");
 
 const app = express();
 
@@ -37,16 +25,23 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 // Apply the rate limiting middleware to all requests
 app.use(limiter);
-// Apply auth0
-app.use(auth(config));
+
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET, // session secret
+    resave: false,
+    saveUninitialized: true,
+    cookie: { maxAge: 60000 }
+  })
+);
+
+// initialize passport and session
+app.use(passport.initialize());
+app.use(passport.session());
 
 // ROUTERS
 app.get("/", (req, res) => {
-  // res.send("Wellcome Move Chess!");
-  const isLogin = req.oidc.isAuthenticated();
-  res.send(
-    isLogin ? "Logged in" : "Logged out",
-  );
+  res.send("Wellcome Move Chess!");
 });
 
 require("./src/routes/auth.routes.js")(app);

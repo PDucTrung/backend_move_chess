@@ -100,60 +100,18 @@ exports.login = async (req, res) => {
   }
 };
 
-exports.socialLogin = async (req, res) => {
-  try {
-    // Extract user information after successful authentication
-    const { email, sub } = req.oidc.user;
-    let user = await User.findOne({ email });
-
-    if (!user) {
-      // If user doesn't exist, create a new one
-      user = new User({
-        email,
-        username: email.split("@")[0],
-        oauthProviders: [
-          {
-            provider: "google",
-            providerId: sub,
-          },
-        ],
-      });
-      await user.save();
-    } else {
-      // Update user's oauthProviders if google not already added
-      const googleProvider = user.oauthProviders.find(
-        (provider) => provider.provider === "google"
-      );
-      if (!googleProvider) {
-        user.oauthProviders.push({ provider: "google", providerId: sub });
-        await user.save();
-      }
-    }
-
-    // if (!user.isVerified) {
-    //   return res.status(400).send("Please verify your email first");
-    // }
-    if (!user.isVerified) {
-      user.isVerified = true; // Automatically verify the user if logging in with Google
-      await user.save();
-    }
-
-    const accessToken = generateAccessToken(user._id);
-    const refreshToken = generateRefreshToken(user._id);
-
-    await new Token({ userId: user._id, token: refreshToken }).save();
-
-    res.cookie("refreshToken", refreshToken, { httpOnly: true, secure: true });
-    res.status(200).json({ accessToken });
-  } catch (err) {
-    res.status(400).send("Error logging in with Google");
-  }
-};
-
 exports.callback = async (req, res) => {
-  res.oidc.callback({
-    redirectUri: `${process.env.API_BASE_URL}/callback`,
-  });
+  if (!req.user) {
+    res.status(400).json({ error: "Authentication failed" });
+  }
+  const accessToken = generateAccessToken(req.user._id);
+  const refreshToken = generateRefreshToken(req.user._id);
+
+  await new Token({ userId: req.user._id, token: refreshToken }).save();
+
+  res.cookie("refreshToken", refreshToken, { httpOnly: true, secure: true });
+  // res.status(200).json({ accessToken });
+  res.redirect(`${process.env.API_BASE_URL}`);
 };
 
 exports.refreshToken = async (req, res) => {
@@ -176,15 +134,22 @@ exports.refreshToken = async (req, res) => {
   }
 };
 
-exports.logout = async (req, res) => {
-  const isLogin = req.oidc.isAuthenticated();
-  if (isLogin) res.oidc.logout({ redirectUri: `${process.env.API_BASE_URL}` });
+exports.logout = async (req, res, next) => {
+  // req.logout((err) => {
+  //   if (err) {
+  //     return next(err);
+  //   }
+  // });
   const refreshToken = req.cookies.refreshToken;
   if (refreshToken) {
     await Token.findOneAndDelete({ token: refreshToken });
     res.clearCookie("refreshToken");
   }
-  // res.redirect(`${process.env.API_BASE_URL}`);
+  req.session.destroy();
+  if (req.cookies["connect.sid"]) {
+    res.clearCookie("connect.sid");
+  }
+  res.clearCookie("mycookie");
   res.status(200).send("Logged out");
 };
 

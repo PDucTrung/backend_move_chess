@@ -15,30 +15,3 @@ exports.authenticateToken = (req, res, next) => {
     next();
   });
 };
-
-exports.loginGoogle = async (req, res, next) => {
-  // Check if the user is authenticated
-  const isLogin = req.oidc.isAuthenticated();
-  if (!isLogin) {
-    // Redirect to Google login
-    return res.oidc.login({
-      authorizationParams: {
-        connection: "google-oauth2",
-        // redirect_uri: `${process.env.API_BASE_URL}`,
-      },
-    });
-  }
-  next();
-};
-
-exports.loginFacebook = async (req, res, next) => {
-  const isLogin = req.oidc.isAuthenticated();
-  if (!isLogin)
-    return res.oidc.login({
-      authorizationParams: {
-        connection: "facebook",
-        // redirect_uri: `${process.env.API_BASE_URL}`,
-      },
-    });
-  next();
-};
