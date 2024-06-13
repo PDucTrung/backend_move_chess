@@ -5,12 +5,13 @@ const GameSchema = new mongoose.Schema({
     {
       playerId: { type: mongoose.Schema.Types.ObjectId, ref: "Account" },
       color: { type: String, enum: ["black", "white"] },
+      moves: [{ type: String }],
+      skinUsed: [{ type: mongoose.Schema.Types.ObjectId, ref: "Skin" }],
+      result: { type: String, enum: ["win", "loss", "draw"] },
     },
   ],
-  moves: [{ type: String }],
-  result: { type: String, enum: ["win", "loss", "draw"] },
+  arbiter:{ type: mongoose.Schema.Types.ObjectId, ref: "Account" },
   datePlayed: { type: Date, default: Date.now },
-  skinUsed: { type: mongoose.Schema.Types.ObjectId, ref: "Skin" },
   arbitrated: { type: Boolean, default: false },
 });
 

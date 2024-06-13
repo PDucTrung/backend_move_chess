@@ -62,7 +62,7 @@ const SkinMutation = new GraphQLObjectType({
             return { success: false, message: 'Skin not found' };
           }
 
-          await skin.remove();
+          await skin.deleteOne();
           return { success: true, message: 'Skin deleted successfully' };
         } catch (err) {
           return { success: false, message: err.message };

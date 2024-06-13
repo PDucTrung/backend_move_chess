@@ -125,7 +125,6 @@ const AccountMutation = new GraphQLObjectType({
 
             account.isBaned = true;
             const warning = {
-              date: new Date(),
               reason: args.reason || "No reason provided",
             };
             account.warnings.push(warning);
@@ -156,10 +155,14 @@ const AccountMutation = new GraphQLObjectType({
             account.arbitration.kycVerified = args.kycVerified;
           }
           if (args.twoFactorAuthEnabled) {
-            account.arbitration.twoFactorAuthEnabled = args.twoFactorAuthEnabled;
+            account.arbitration.twoFactorAuthEnabled =
+              args.twoFactorAuthEnabled;
           }
           if (args.isArbiter) {
-            if (!account.arbitration.kycVerified && !account.arbitration.twoFactorAuthEnabled)
+            if (
+              !account.arbitration.kycVerified &&
+              !account.arbitration.twoFactorAuthEnabled
+            )
               return {
                 success: false,
                 message: "Account not kycVerified or not enabled twoFactorAuth",

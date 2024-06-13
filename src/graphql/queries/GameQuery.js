@@ -1,10 +1,10 @@
-const { GraphQLObjectType, GraphQLList, GraphQLString } = require('graphql');
-const GameType = require('../types/GameType');
+const { GraphQLObjectType, GraphQLList, GraphQLString } = require("graphql");
+const { GameType } = require("../types/GameType");
 const db = require("../../models");
 const Game = db.game;
 
 const GameQuery = new GraphQLObjectType({
-  name: 'GameQuery',
+  name: "GameQuery",
   fields: {
     games: {
       type: new GraphQLList(GameType),
@@ -23,7 +23,14 @@ const GameQuery = new GraphQLObjectType({
       type: new GraphQLList(GameType),
       args: { playerId: { type: GraphQLString } },
       resolve(parent, args) {
-        return Game.find({ 'players.playerId': args.playerId }).exec();
+        return Game.find({ "players.playerId": args.playerId }).exec();
+      },
+    },
+    gamesByArbiter: {
+      type: new GraphQLList(GameType),
+      args: { arbiter: { type: GraphQLString } },
+      resolve(parent, args) {
+        return Game.find({ "players.playerId": args.playerId }).exec();
       },
     },
   },

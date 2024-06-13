@@ -39,7 +39,7 @@ const TokenMutation = new GraphQLObjectType({
             return { success: false, message: 'Token not found' };
           }
 
-          await token.remove();
+          await token.deleteOne();
           return { success: true, message: 'Token deleted successfully' };
         } catch (err) {
           return { success: false, message: err.message };
