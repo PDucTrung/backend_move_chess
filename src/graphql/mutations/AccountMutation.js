@@ -23,6 +23,7 @@ const JWT_REFRESH_SECRET = jwtConfig.JWT_REFRESH_SECRET;
 const EMAIL_SECRET = jwtConfig.EMAIL_SECRET;
 const db = require("../../models");
 const Account = db.account;
+const BannedPlayer = db.bannedPlayer;
 
 const AccountMutation = new GraphQLObjectType({
   name: "AccountMutation",
@@ -126,6 +127,7 @@ const AccountMutation = new GraphQLObjectType({
             account.isBaned = true;
             const warning = {
               reason: args.reason || "No reason provided",
+              bannedBy: context.req.user.userId
             };
             account.warnings.push(warning);
 
@@ -136,6 +138,34 @@ const AccountMutation = new GraphQLObjectType({
           }
         }
       ),
+    },
+    checkBannedPlayer: {
+      type: MutationResponseType,
+      args: {
+        id: { type: GraphQLString },
+      },
+      async resolve(parent, args) {
+        try {
+          const account = await Account.findById(args.id);
+          if (!account) {
+            return { success: false, message: "Account not found" };
+          }
+          
+          if (account.isBaned) {
+            const bannedPlayer = new BannedPlayer({
+              playerId: args.id,
+              username: account.username,
+            });
+            await bannedPlayer.save();
+            return { success: false, message: "Player is banned" };
+          }
+
+          await account.save();
+          return { success: true, message: "Player is not banned" };
+        } catch (err) {
+          return { success: false, message: err.message };
+        }
+      },
     },
     updateArbitration: {
       type: MutationResponseType,

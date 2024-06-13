@@ -54,6 +54,7 @@ const WarningType = new GraphQLObjectType({
   fields: {
     date: { type: GraphQLString },
     reason: { type: GraphQLString },
+    bannedBy: { type: GraphQLString },
   },
 });
 

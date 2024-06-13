@@ -7,5 +7,6 @@ db.account = require("./account.model");
 db.game = require("./game.model");
 db.skin = require("./skin.model");
 db.token = require("./token.model");
+db.bannedPlayer = require("./bannedPlayer.model");
 
 module.exports = db;

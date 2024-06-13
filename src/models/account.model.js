@@ -44,6 +44,7 @@ const AccountSchema = new mongoose.Schema({
     {
       date: { type: Date, default: Date.now },
       reason: { type: String },
+      bannedBy: { type: mongoose.Schema.Types.ObjectId, ref: "Account" }
     },
   ],
   arbitration: {
