@@ -5,7 +5,11 @@ const db = require("../models");
 const User = db.account;
 const Token = db.token;
 const { sendEmail } = require("../utils/emailService");
-const { validatePassword } = require("../utils/utils");
+const {
+  validatePassword,
+  generateAccessToken,
+  generateRefreshToken,
+} = require("../utils/utils");
 
 const jwtConfig = require("../config/jwt.config");
 const API_BASE_URL = process.env.API_BASE_URL;
@@ -13,19 +17,8 @@ const JWT_ACCESS_SECRET = jwtConfig.JWT_ACCESS_SECRET;
 const JWT_REFRESH_SECRET = jwtConfig.JWT_REFRESH_SECRET;
 const EMAIL_SECRET = jwtConfig.EMAIL_SECRET;
 
-const generateAccessToken = (userId) => {
-  return jwt.sign({ userId }, JWT_ACCESS_SECRET, { expiresIn: "15m" });
-};
-
-const generateRefreshToken = (userId) => {
-  const refreshToken = jwt.sign({ userId }, JWT_REFRESH_SECRET, {
-    expiresIn: "7d",
-  });
-  return refreshToken;
-};
-
 exports.register = async (req, res) => {
-  const { email, username, password } = req.body;
+  const { email, password } = req.body;
   try {
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -41,11 +34,15 @@ exports.register = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = new User({ email, username, password: hashedPassword });
+    const user = new User({
+      email,
+      password: hashedPassword,
+      username: "user" + new Date().getTime(),
+    });
     await user.save();
 
     const token = jwt.sign({ userId: user._id }, EMAIL_SECRET, {
-      expiresIn: "1d",
+      expiresIn: "5m",
     });
     const url = `${API_BASE_URL}/api/auth/confirmation/${token}`;
 
@@ -145,9 +142,9 @@ exports.logout = async (req, res, next) => {
     await Token.findOneAndDelete({ token: refreshToken });
     res.clearCookie("refreshToken");
   }
-  req.session.destroy(err => {
+  req.session.destroy((err) => {
     if (err) {
-      return res.status(500).json({ message: 'Failed to destroy session' });
+      return res.status(500).json({ message: "Failed to destroy session" });
     }
   });
   res.status(200).send("Logged out");

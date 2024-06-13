@@ -1,4 +1,9 @@
+require("dotenv").config();
 const validator = require('validator');
+const jwt = require("jsonwebtoken");
+const jwtConfig = require("../config/jwt.config");
+const JWT_ACCESS_SECRET = jwtConfig.JWT_ACCESS_SECRET;
+const JWT_REFRESH_SECRET = jwtConfig.JWT_REFRESH_SECRET;
 
 module.exports.validatePassword = (password) => {
   const minLength = 6;
@@ -19,4 +24,15 @@ module.exports.validatePassword = (password) => {
   }
 
   return true;
+};
+
+module.exports.generateAccessToken = (userId) => {
+  return jwt.sign({ userId }, JWT_ACCESS_SECRET, { expiresIn: "15m" });
+};
+
+module.exports.generateRefreshToken = (userId) => {
+  const refreshToken = jwt.sign({ userId }, JWT_REFRESH_SECRET, {
+    expiresIn: "7d",
+  });
+  return refreshToken;
 };

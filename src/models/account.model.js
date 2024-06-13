@@ -39,6 +39,7 @@ const AccountSchema = new mongoose.Schema({
       activationDate: { type: Date },
     },
   ],
+  isBaned:{ type: Boolean, default: false },
   warnings: [
     {
       date: { type: Date, default: Date.now },

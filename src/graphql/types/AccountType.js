@@ -103,6 +103,7 @@ const AccountType = new GraphQLObjectType({
     settings: { type: SettingsType },
     joinedDate: { type: GraphQLString },
     skins: { type: new GraphQLList(SkinType) },
+    isBaned: { type: GraphQLBoolean },
     warnings: { type: new GraphQLList(WarningType) },
     arbitration: { type: ArbitrationType },
     oauthProviders: { type: new GraphQLList(OauthProviderType) },
