@@ -4,6 +4,7 @@ const cors = require("cors");
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
 const express = require("express");
+const session = require("express-session");
 const rateLimit = require("express-rate-limit");
 const dbConfig = require("./src/config/db.config.js");
 const limiter = rateLimit({
@@ -12,10 +13,9 @@ const limiter = rateLimit({
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 });
-const { graphqlHTTP } = require('express-graphql');
-const schema = require('./src/graphql/schema');
+const { graphqlHTTP } = require("express-graphql");
+const schema = require("./src/graphql/schema");
 const passport = require("passport");
-const session = require("express-session");
 require("./src/services/passport.js");
 
 const app = express();
@@ -33,7 +33,10 @@ app.use(
     secret: process.env.SESSION_SECRET, // session secret
     resave: false,
     saveUninitialized: true,
-    cookie: { maxAge: 60000 }
+    cookie: {
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+      secure: process.env.NODE_ENV === "production",
+    },
   })
 );
 
@@ -42,11 +45,14 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 // GraphQL endpoint
-app.use('/graphql', graphqlHTTP((req, res) => ({
-  schema: schema,
-  graphiql: true,
-  context: { req, res },
-})));
+app.use(
+  "/graphql",
+  graphqlHTTP((req, res) => ({
+    schema: schema,
+    graphiql: true,
+    context: { req, res },
+  }))
+);
 
 // ROUTERS
 app.get("/", (req, res) => {

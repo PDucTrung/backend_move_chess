@@ -137,7 +137,7 @@ exports.refreshToken = async (req, res) => {
 exports.logout = async (req, res, next) => {
   // req.logout((err) => {
   //   if (err) {
-  //     return next(err);
+  //     return res.status(500).json({ message: 'Failed to logout', err });
   //   }
   // });
   const refreshToken = req.cookies.refreshToken;
@@ -145,11 +145,11 @@ exports.logout = async (req, res, next) => {
     await Token.findOneAndDelete({ token: refreshToken });
     res.clearCookie("refreshToken");
   }
-  req.session.destroy();
-  if (req.cookies["connect.sid"]) {
-    res.clearCookie("connect.sid");
-  }
-  res.clearCookie("mycookie");
+  req.session.destroy(err => {
+    if (err) {
+      return res.status(500).json({ message: 'Failed to destroy session' });
+    }
+  });
   res.status(200).send("Logged out");
 };
 
