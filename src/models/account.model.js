@@ -56,6 +56,7 @@ const AccountSchema = new mongoose.Schema({
     ],
     totalGamesArbitrated: { type: Number, default: 0 },
     kycVerified: { type: Boolean, default: false },
+    twoFactorSecret: { type: String },
     twoFactorAuthEnabled: { type: Boolean, default: false },
   },
   oauthProviders: [

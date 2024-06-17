@@ -1,6 +1,8 @@
 require("dotenv").config();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const speakeasy = require("speakeasy");
+const QRCode = require("qrcode");
 const db = require("../models");
 const User = db.account;
 const Token = db.token;
@@ -91,7 +93,10 @@ exports.login = async (req, res) => {
     await new Token({ userId: user._id, token: refreshToken }).save();
 
     res.cookie("refreshToken", refreshToken, { httpOnly: true, secure: true });
-    res.status(200).json({ accessToken });
+    res.status(200).json({
+      accessToken,
+      twoFactorAuthEnabled: user.arbitration.twoFactorAuthEnabled,
+    });
   } catch (err) {
     res.status(400).send("Error logging in");
   }
@@ -184,4 +189,44 @@ exports.resetPassword = async (req, res) => {
   } catch (err) {
     res.status(400).send("Invalid token");
   }
+};
+
+exports.enable2fa = async (req, res) => {
+  const user = await User.findById(req.user.userId);
+
+  const secret = speakeasy.generateSecret({ length: 20 });
+  user.arbitration.twoFactorSecret = secret.base32;
+  user.arbitration.twoFactorAuthEnabled = true;
+  await user.save();
+
+  const otpAuthUrl = speakeasy.otpauthURL({
+    secret: user.arbitration.twoFactorSecret,
+    label: user.username,
+    issuer: process.env.APP_NAME,
+  });
+
+  QRCode.toDataURL(otpAuthUrl, (err, dataUrl) => {
+    if (err) {
+      return res.status(500).send("Error generating QR code");
+    }
+    res.json({ qrCodeUrl: dataUrl });
+  });
+};
+
+exports.verify2fa =  async (req, res) => {
+  const { otp } = req.body;
+  const user = await User.findById(req.user.userId);
+
+  const verified = speakeasy.totp.verify({
+    secret: user.arbitration.twoFactorSecret,
+    encoding: 'base32',
+    token: otp
+  });
+
+  if (!verified) {
+    return res.status(401).send('Invalid OTP');
+  }
+
+  const authToken = jwt.sign({ userId: user._id, twoFactorVerified: true }, JWT_ACCESS_SECRET, { expiresIn: '1h' });
+  res.json({ authToken });
 };
