@@ -191,7 +191,7 @@ exports.resetPassword = async (req, res) => {
   }
 };
 
-exports.enable2fa = async (req, res) => {
+exports.enable2FA = async (req, res) => {
   const user = await User.findById(req.user.userId);
 
   const secret = speakeasy.generateSecret({ length: 20 });
@@ -213,14 +213,32 @@ exports.enable2fa = async (req, res) => {
   });
 };
 
-exports.verify2fa =  async (req, res) => {
+exports.disable2FA = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId);
+
+    if (!user.twoFactorEnabled) {
+      return res.status(400).send("2FA is not enabled");
+    }
+
+    user.arbitration.twoFactorAuthEnabled = false;
+    user.arbitration.twoFactorSecret = null;
+    await user.save();
+
+    res.send("2FA disabled successfully");
+  } catch (error) {
+    res.status(500).send('Server error');
+  }
+};
+
+exports.verify2FA =  async (req, res) => {
   const { otp } = req.body;
   const user = await User.findById(req.user.userId);
 
   const verified = speakeasy.totp.verify({
     secret: user.arbitration.twoFactorSecret,
     encoding: 'base32',
-    token: otp
+    token: otp,
   });
 
   if (!verified) {
