@@ -54,13 +54,38 @@ exports.register = async (req, res) => {
       `<a href="${url}">Click here to confirm your email</a>`
     );
 
-    res
-      .status(201)
-      .send(
-        "User registered! Please check your email to confirm your account."
-      );
+    const userInfo = await User.findById(user._id).select("-password");
+    res.status(200).send({
+      user: userInfo,
+      msg: "User registered! Please check your email to confirm your account.",
+    });
   } catch (err) {
     res.status(400).send("Error registering user");
+  }
+};
+
+exports.resendEmail = async (req, res) => {
+  try {
+    const { userId, email } = req.body;
+    if (!userId || !email)
+      res
+        .status(400)
+        .send({ status: "Failed", msg: "Invalid email or userId" });
+    const token = jwt.sign({ userId: userId }, EMAIL_SECRET, {
+      expiresIn: "5m",
+    });
+    const url = `${API_BASE_URL}/api/auth/confirmation/${token}`;
+
+    await sendEmail(
+      email,
+      "Email Confirmation",
+      `<a href="${url}">Click here to confirm your email</a>`
+    );
+    res.status(200).send({
+      msg: "Resending email Success!",
+    });
+  } catch (err) {
+    res.status(400).send("Error resending email");
   }
 };
 
@@ -68,7 +93,8 @@ exports.confirmEmail = async (req, res) => {
   try {
     const { userId } = jwt.verify(req.params.token, EMAIL_SECRET);
     await User.updateOne({ _id: userId }, { isVerified: true });
-    res.status(200).send("Email confirmed!");
+    // res.status(200).send("Email confirmed!");
+    res.redirect(`${process.env.REDIRECT_URL}/signup/step2`);
   } catch (err) {
     res.status(400).send("Invalid token");
   }
@@ -227,24 +253,28 @@ exports.disable2FA = async (req, res) => {
 
     res.send("2FA disabled successfully");
   } catch (error) {
-    res.status(500).send('Server error');
+    res.status(500).send("Server error");
   }
 };
 
-exports.verify2FA =  async (req, res) => {
+exports.verify2FA = async (req, res) => {
   const { otp } = req.body;
   const user = await User.findById(req.user.userId);
 
   const verified = speakeasy.totp.verify({
     secret: user.arbitration.twoFactorSecret,
-    encoding: 'base32',
+    encoding: "base32",
     token: otp,
   });
 
   if (!verified) {
-    return res.status(401).send('Invalid OTP');
+    return res.status(401).send("Invalid OTP");
   }
 
-  const authToken = jwt.sign({ userId: user._id, twoFactorVerified: true }, JWT_ACCESS_SECRET, { expiresIn: '1h' });
+  const authToken = jwt.sign(
+    { userId: user._id, twoFactorVerified: true },
+    JWT_ACCESS_SECRET,
+    { expiresIn: "1h" }
+  );
   res.json({ authToken });
 };

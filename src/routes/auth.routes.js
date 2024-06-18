@@ -3,8 +3,9 @@ const controller = require("../controllers/authController");
 const { authenticateToken } = require("../middleware/authMiddleware");
 
 module.exports = function (app) {
-  app.post("/register", controller.register);
+  app.post("/auth/register", controller.register);
   app.get("/api/auth/confirmation/:token", controller.confirmEmail);
+  app.post("/auth/resend-verification", controller.resendEmail);
   app.post("/auth/login", controller.login);
   app.get(
     "/auth/google",
