@@ -40,6 +40,7 @@ const AccountSchema = new mongoose.Schema({
     },
   ],
   isBaned:{ type: Boolean, default: false },
+  isAdmin:{ type: Boolean, default: false },
   warnings: [
     {
       date: { type: Date, default: Date.now },

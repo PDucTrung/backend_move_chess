@@ -21,7 +21,12 @@ require("./src/services/passport.js");
 const app = express();
 
 // middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: process.env.REDIRECT_URL,
+    credentials: true,
+  })
+);
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());

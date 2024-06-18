@@ -94,6 +94,11 @@ exports.confirmEmail = async (req, res) => {
     const { userId } = jwt.verify(req.params.token, EMAIL_SECRET);
     await User.updateOne({ _id: userId }, { isVerified: true });
     // res.status(200).send("Email confirmed!");
+    const refreshToken = generateRefreshToken(userId);
+
+    await new Token({ userId: userId, token: refreshToken }).save();
+
+    res.cookie("refreshToken", refreshToken, { httpOnly: true, secure: true });
     res.redirect(`${process.env.REDIRECT_URL}/signup/step2`);
   } catch (err) {
     res.status(400).send("Invalid token");
