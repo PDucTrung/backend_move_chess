@@ -54,7 +54,12 @@ exports.register = async (req, res) => {
       `<a href="${url}">Click here to confirm your email</a>`
     );
 
-    const userInfo = await User.findById(user._id).select("-password");
+    const userInfo = {
+      _id: user._id,
+      email: user.email,
+      username: user.username,
+      isVerified: user.isVerified,
+    };
     res.status(200).send({
       user: userInfo,
       msg: "User registered! Please check your email to confirm your account.",
@@ -105,6 +110,23 @@ exports.confirmEmail = async (req, res) => {
   }
 };
 
+exports.checkVerifyEmail = async (req, res) => {
+  try {
+    const { userId } = req.body;
+    if (!userId)
+      res.status(400).send({ status: "Failed", msg: "Invalid userId" });
+    const user = await User.findOne({ _id: userId });
+    if (!user) {
+      return res.status(404).send("User not found");
+    }
+    res.status(200).send({
+      isVerified: user.isVerified,
+    });
+  } catch (err) {
+    res.status(400).send("Error check verify email");
+  }
+};
+
 exports.login = async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -137,7 +159,7 @@ exports.callback = async (req, res) => {
   if (!req.user) {
     res.status(400).json({ error: "Authentication failed" });
   }
-  const accessToken = generateAccessToken(req.user._id);
+  // const accessToken = generateAccessToken(req.user._id);
   const refreshToken = generateRefreshToken(req.user._id);
 
   await new Token({ userId: req.user._id, token: refreshToken }).save();
