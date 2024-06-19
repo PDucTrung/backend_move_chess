@@ -132,7 +132,7 @@ exports.checkVerifyEmail = async (req, res) => {
 };
 
 exports.login = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, otp } = req.body;
   try {
     const user = await User.findOne({ email });
     const check = await bcrypt.compare(password, user.password);
@@ -141,6 +141,22 @@ exports.login = async (req, res) => {
     }
     if (!user.isVerified) {
       return res.status(400).send("Please verify your email first");
+    }
+
+    if (user.arbitration.twoFactorAuthEnabled) {
+      if (!otp) {
+        return res.status(400).json({ msg: "2FA token is required" });
+      }
+
+      const verified = speakeasy.totp.verify({
+        secret: user.twoFactorSecret,
+        encoding: "base32",
+        token: otp,
+      });
+
+      if (!verified) {
+        return res.status(400).json({ msg: "Invalid 2FA token" });
+      }
     }
 
     const accessToken = generateAccessToken(user._id);
@@ -270,7 +286,7 @@ exports.enable2FA = async (req, res) => {
     if (err) {
       return res.status(500).send("Error generating QR code");
     }
-    res.json({ qrCodeUrl: dataUrl });
+    res.json({ qrCodeUrl: dataUrl, secret: user.arbitration.twoFactorSecret });
   });
 };
 
@@ -311,5 +327,5 @@ exports.verify2FA = async (req, res) => {
     JWT_ACCESS_SECRET,
     { expiresIn: "1h" }
   );
-  res.json({ authToken });
+  res.status(200).send({ authToken, msg: "2FA verified successfully" });
 };
