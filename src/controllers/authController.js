@@ -172,7 +172,9 @@ exports.callback = async (req, res) => {
   // res.redirect(
   //   `${process.env.REDIRECT_URL}/signup/step3?accessToken=${accessToken}`
   // );
-  res.redirect(`${process.env.REDIRECT_URL}/signup/step3`);
+  if (req.user?.avatars?.length > 0)
+    res.redirect(`${process.env.REDIRECT_URL}`);
+  else res.redirect(`${process.env.REDIRECT_URL}/signup/step3`);
 };
 
 exports.refreshToken = async (req, res) => {
