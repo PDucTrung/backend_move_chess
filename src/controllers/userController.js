@@ -25,9 +25,10 @@ exports.updateProfile = async (req, res) => {
     if (username) {
       updates.username = username;
     }
-    if (avatars) {
-      user.avatars = avatars;
+    if (avatars && Array.isArray(avatars)) {
+      updates.avatars = avatars;
     }
+    user.save();
 
     const updatedUser = await User.findByIdAndUpdate(
       req.user.userId,

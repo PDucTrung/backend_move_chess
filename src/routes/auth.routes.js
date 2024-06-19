@@ -19,8 +19,7 @@ module.exports = function (app) {
   app.get(
     "/auth/google/callback",
     passport.authenticate("google", {
-      access_type: "offline",
-      scope: ["email", "profile"],
+      failureRedirect: `${process.env.REDIRECT_URL}/signin`,
     }),
     controller.callback
   );

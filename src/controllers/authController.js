@@ -104,6 +104,10 @@ exports.confirmEmail = async (req, res) => {
     await new Token({ userId: userId, token: refreshToken }).save();
 
     res.cookie("refreshToken", refreshToken, { httpOnly: true, secure: true });
+    const accessToken = generateAccessToken(userId);
+    // res.redirect(
+    //   `${process.env.REDIRECT_URL}/signup/step2?accessToken=${accessToken}`
+    // );
     res.redirect(`${process.env.REDIRECT_URL}/signup/step2`);
   } catch (err) {
     res.status(400).send("Invalid token");
@@ -159,14 +163,16 @@ exports.callback = async (req, res) => {
   if (!req.user) {
     res.status(400).json({ error: "Authentication failed" });
   }
-  // const accessToken = generateAccessToken(req.user._id);
   const refreshToken = generateRefreshToken(req.user._id);
 
   await new Token({ userId: req.user._id, token: refreshToken }).save();
 
   res.cookie("refreshToken", refreshToken, { httpOnly: true, secure: true });
-  // res.status(200).json({ accessToken });
-  res.redirect(`${process.env.API_BASE_URL}`);
+  // const accessToken = generateAccessToken(req.user._id);
+  // res.redirect(
+  //   `${process.env.REDIRECT_URL}/signup/step3?accessToken=${accessToken}`
+  // );
+  res.redirect(`${process.env.REDIRECT_URL}/signup/step3`);
 };
 
 exports.refreshToken = async (req, res) => {

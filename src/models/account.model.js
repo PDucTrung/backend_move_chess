@@ -5,7 +5,7 @@ const AccountSchema = new mongoose.Schema({
   username: { type: String, unique: true },
   password: { type: String },
   isVerified: { type: Boolean, default: false },
-  avatars: [{ type: String }],
+  avatars: [{ type: String, default: [] }],
   wallets: [
     {
       chain: { type: String },
@@ -39,13 +39,13 @@ const AccountSchema = new mongoose.Schema({
       activationDate: { type: Date },
     },
   ],
-  isBaned:{ type: Boolean, default: false },
-  isAdmin:{ type: Boolean, default: false },
+  isBaned: { type: Boolean, default: false },
+  isAdmin: { type: Boolean, default: false },
   warnings: [
     {
       date: { type: Date, default: Date.now },
       reason: { type: String },
-      bannedBy: { type: mongoose.Schema.Types.ObjectId, ref: "Account" }
+      bannedBy: { type: mongoose.Schema.Types.ObjectId, ref: "Account" },
     },
   ],
   arbitration: {
