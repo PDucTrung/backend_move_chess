@@ -67,6 +67,7 @@ const AccountSchema = new mongoose.Schema({
       providerId: { type: String },
     },
   ],
+  kycVerifiedId: { type: String },
   kycVerified: { type: Boolean, default: false },
   twoFactorSecret: { type: String },
   twoFactorAuthEnabled: { type: Boolean, default: false },

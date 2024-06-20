@@ -14,4 +14,5 @@ module.exports = function (app) {
     checkRoleAdmin,
     controller.removeRole
   );
+  app.post("/updateKYC", authenticateToken, checkRoleAdmin, controller.updateKYC);
 };

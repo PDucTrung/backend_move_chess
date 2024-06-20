@@ -29,7 +29,6 @@ exports.updateProfile = async (req, res) => {
     if (avatars && Array.isArray(avatars)) {
       updates.avatars = avatars;
     }
-    await user.save();
 
     const updatedUser = await User.findByIdAndUpdate(
       req.user.userId,
@@ -44,14 +43,14 @@ exports.updateProfile = async (req, res) => {
 };
 
 exports.addRole = async (req, res) => {
-  const { role } = req.body;
+  const { role, userId } = req.body;
 
   if (!ROLES_ACCOUNT.includes(role)) {
     return res.status(400).send("Invalid role");
   }
 
   try {
-    const user = await User.findById(req.user.userId);
+    const user = await User.findById(userId);
 
     if (!user) {
       return res.status(404).send("User not found");
@@ -64,31 +63,55 @@ exports.addRole = async (req, res) => {
 
     res.send("Role added successfully");
   } catch (error) {
-    console.error('Error adding role:', error);
+    console.error("Error adding role:", error);
     res.status(500).send("Server error");
   }
 };
 
 exports.removeRole = async (req, res) => {
-  const { role } = req.body;
+  const { role, userId } = req.body;
 
   if (!ROLES_ACCOUNT.includes(role)) {
     return res.status(400).send("Invalid role");
   }
 
   try {
-    const user = await User.findById(req.user.userId);
+    const user = await User.findById(userId);
 
     if (!user) {
       return res.status(404).send("User not found");
     }
 
-    user.roles = user.roles.filter(r => r !== role);
+    user.roles = user.roles.filter((r) => r !== role);
     await user.save();
 
     res.send("Role removed successfully");
   } catch (error) {
-    console.error('Error removing role:', error);
+    console.error("Error removing role:", error);
+    res.status(500).send("Server error");
+  }
+};
+
+exports.updateKYC = async (req, res) => {
+  const { kycVerifiedId, kycVerified, userId } = req.body;
+  try {
+    const user = await User.findById(userId).select("-password");
+    if (!user) {
+      return res.status(404).send("User not found");
+    }
+    if (!kycVerified) kycVerified = false;
+    const updates = {};
+    if (kycVerifiedId) updates.kycVerifiedId = kycVerifiedId;
+    updates.kycVerified = kycVerified;
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user.userId,
+      { $set: updates },
+      { new: true, select: "-password" }
+    );
+
+    res.status(200).json({ user: updatedUser });
+  } catch (err) {
     res.status(500).send("Server error");
   }
 };
