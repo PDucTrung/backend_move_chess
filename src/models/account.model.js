@@ -42,7 +42,7 @@ const AccountSchema = new mongoose.Schema({
   ],
   isBaned: { type: Boolean, default: false },
   roles: {
-    type: [String],
+    type: [{ type: String }],
     enum: ROLES_ACCOUNT,
     default: [ROLES.PLAYER],
   },

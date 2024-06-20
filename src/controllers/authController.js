@@ -104,7 +104,7 @@ exports.confirmEmail = async (req, res) => {
     await new Token({ userId: userId, token: refreshToken }).save();
 
     res.cookie("refreshToken", refreshToken, { httpOnly: true, secure: true });
-    const accessToken = generateAccessToken(userId);
+    // const accessToken = generateAccessToken(userId);
     // res.redirect(
     //   `${process.env.REDIRECT_URL}/signup/step2?accessToken=${accessToken}`
     // );
@@ -145,7 +145,10 @@ exports.login = async (req, res) => {
 
     if (user.twoFactorAuthEnabled) {
       if (!otp) {
-        return res.status(400).json({ msg: "2FA token is required" });
+        return res.status(400).json({
+          twoFactorAuthEnabled: user.twoFactorAuthEnabled,
+          msg: "2FA token is required",
+        });
       }
 
       const verified = speakeasy.totp.verify({
@@ -155,7 +158,12 @@ exports.login = async (req, res) => {
       });
 
       if (!verified) {
-        return res.status(400).json({ msg: "Invalid 2FA token" });
+        return res
+          .status(400)
+          .json({
+            twoFactorAuthEnabled: user.twoFactorAuthEnabled,
+            msg: "Invalid 2FA token",
+          });
       }
     }
 
@@ -168,7 +176,6 @@ exports.login = async (req, res) => {
     res.cookie("refreshToken", refreshToken, { httpOnly: true, secure: true });
     res.status(200).json({
       accessToken,
-      twoFactorAuthEnabled: user.twoFactorAuthEnabled,
     });
   } catch (err) {
     res.status(400).send("Error logging in");

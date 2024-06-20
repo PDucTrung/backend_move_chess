@@ -29,7 +29,7 @@ exports.updateProfile = async (req, res) => {
     if (avatars && Array.isArray(avatars)) {
       updates.avatars = avatars;
     }
-
+    
     const updatedUser = await User.findByIdAndUpdate(
       req.user.userId,
       { $set: updates },

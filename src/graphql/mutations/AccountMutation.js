@@ -9,7 +9,10 @@ const {
 } = require("graphql");
 const MutationResponseType = require("../types/MutationResponseType");
 const { applyMiddleware } = require("../../utils/middleware");
-const { authenticateTokenGraphQL } = require("../../middleware/authMiddleware");
+const {
+  authenticateTokenGraphQL,
+  authenticateAdminGraphQL,
+} = require("../../middleware/authMiddleware");
 const { sendEmail } = require("../../utils/emailService");
 const {
   validatePassword,
@@ -172,26 +175,18 @@ const AccountMutation = new GraphQLObjectType({
       type: MutationResponseType,
       args: {
         id: { type: GraphQLString },
-        kycVerified: { type: GraphQLBoolean },
-        twoFactorAuthEnabled: { type: GraphQLBoolean },
       },
       resolve: applyMiddleware(
-        authenticateTokenGraphQL,
+        authenticateAdminGraphQL,
         async (parent, args, context) => {
           try {
-            const user = await Account.findById(context.req.user.userId);
-            if (!user.roles.includes(ROLES.ADMIN)) {
-              return res.status(403).json({ msg: "Access denied" });
-            }
+            // const user = await Account.findById(context.req.user.userId);
+            // if (!user.roles.includes(ROLES.ADMIN)) {
+            //   return res.status(403).json({ msg: "Access denied" });
+            // }
             const account = await Account.findById(args.id);
             if (!account) {
               return { success: false, message: "Account not found" };
-            }
-            if (args.kycVerified) {
-              account.kycVerified = args.kycVerified;
-            }
-            if (args.twoFactorAuthEnabled) {
-              account.twoFactorAuthEnabled = args.twoFactorAuthEnabled;
             }
             const role = ROLES.ARBITRATION;
 
@@ -202,6 +197,66 @@ const AccountMutation = new GraphQLObjectType({
               };
             if (!account.roles.includes(role)) {
               account.roles.push(role);
+            }
+
+            await account.save();
+            return { success: true, message: "Account updated successfully" };
+          } catch (err) {
+            return { success: false, message: err.message };
+          }
+        }
+      ),
+    },
+    updateKYC: {
+      type: MutationResponseType,
+      args: {
+        id: { type: GraphQLString },
+        kycVerifiedId: { type: GraphQLString },
+        kycVerified: { type: GraphQLBoolean },
+      },
+      resolve: applyMiddleware(
+        authenticateAdminGraphQL,
+        async (parent, args, context) => {
+          try {
+            const account = await Account.findById(args.id);
+            if (!account) {
+              return { success: false, message: "Account not found" };
+            }
+            if (args.kycVerifiedId) {
+              account.kycVerifiedId = args.kycVerifiedId;
+            }
+            if (args.kycVerified) {
+              account.kycVerified = args.kycVerified;
+            }
+
+            await account.save();
+            return { success: true, message: "Account updated successfully" };
+          } catch (err) {
+            return { success: false, message: err.message };
+          }
+        }
+      ),
+    },
+    update2FA: {
+      type: MutationResponseType,
+      args: {
+        id: { type: GraphQLString },
+        twoFactorSecret: { type: GraphQLString },
+        twoFactorAuthEnabled: { type: GraphQLBoolean },
+      },
+      resolve: applyMiddleware(
+        authenticateTokenGraphQL,
+        async (parent, args, context) => {
+          try {
+            const account = await Account.findById(args.id);
+            if (!account) {
+              return { success: false, message: "Account not found" };
+            }
+            if (args.twoFactorSecret) {
+              account.twoFactorSecret = args.twoFactorSecret;
+            }
+            if (args.twoFactorAuthEnabled) {
+              account.twoFactorAuthEnabled = args.twoFactorAuthEnabled;
             }
 
             await account.save();

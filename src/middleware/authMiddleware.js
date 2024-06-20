@@ -30,6 +30,28 @@ const authenticateTokenGraphQL = (req, res, next) => {
   });
 };
 
+const authenticateAdminGraphQL = async (req, res, next) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+  if (token == null) return next(new Error("No token provided"));
+
+  jwt.verify(token, JWT_ACCESS_SECRET, async (err, user) => {
+    if (err) return next(new Error("Invalid token"));
+    const account = await User.findById(user.userId).select("-password");
+
+    if (!account) {
+      return next(new Error("User not found"));
+    }
+
+    if (!account.roles.includes(ROLES.ADMIN)) {
+      return next(new Error("Not authorized"));
+    }
+
+    req.user = user;
+    next();
+  });
+};
+
 const checkRoleAdmin = async function (req, res, next) {
   try {
     const user = await User.findById(req.user.userId);
@@ -46,5 +68,6 @@ const checkRoleAdmin = async function (req, res, next) {
 module.exports = {
   authenticateToken,
   authenticateTokenGraphQL,
+  authenticateAdminGraphQL,
   checkRoleAdmin,
 };
