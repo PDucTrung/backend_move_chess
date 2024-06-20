@@ -22,6 +22,7 @@ const JWT_ACCESS_SECRET = jwtConfig.JWT_ACCESS_SECRET;
 const JWT_REFRESH_SECRET = jwtConfig.JWT_REFRESH_SECRET;
 const EMAIL_SECRET = jwtConfig.EMAIL_SECRET;
 const db = require("../../models");
+const { ROLES_ACCOUNT, ROLES } = require("../../utils/contants");
 const Account = db.account;
 const BannedPlayer = db.bannedPlayer;
 
@@ -116,7 +117,7 @@ const AccountMutation = new GraphQLObjectType({
         async (parent, args, context) => {
           try {
             const user = await Account.findById(context.req.user.userId);
-            const isArbiter = user.arbitration.isArbiter;
+            const isArbiter = user.roles.includes(ROLES.ARBITRATION);
             if (!isArbiter)
               return { success: false, message: "Permission denied" };
             const account = await Account.findById(args.id);
@@ -127,7 +128,7 @@ const AccountMutation = new GraphQLObjectType({
             account.isBaned = true;
             const warning = {
               reason: args.reason || "No reason provided",
-              bannedBy: context.req.user.userId
+              bannedBy: context.req.user.userId,
             };
             account.warnings.push(warning);
 
@@ -150,7 +151,7 @@ const AccountMutation = new GraphQLObjectType({
           if (!account) {
             return { success: false, message: "Account not found" };
           }
-          
+
           if (account.isBaned) {
             const bannedPlayer = new BannedPlayer({
               playerId: args.id,
@@ -171,41 +172,45 @@ const AccountMutation = new GraphQLObjectType({
       type: MutationResponseType,
       args: {
         id: { type: GraphQLString },
-        isArbiter: { type: GraphQLBoolean },
         kycVerified: { type: GraphQLBoolean },
         twoFactorAuthEnabled: { type: GraphQLBoolean },
       },
-      async resolve(parent, args) {
-        try {
-          const account = await Account.findById(args.id);
-          if (!account) {
-            return { success: false, message: "Account not found" };
-          }
-          if (args.kycVerified) {
-            account.arbitration.kycVerified = args.kycVerified;
-          }
-          if (args.twoFactorAuthEnabled) {
-            account.arbitration.twoFactorAuthEnabled =
-              args.twoFactorAuthEnabled;
-          }
-          if (args.isArbiter) {
-            if (
-              !account.arbitration.kycVerified &&
-              !account.arbitration.twoFactorAuthEnabled
-            )
+      resolve: applyMiddleware(
+        authenticateTokenGraphQL,
+        async (parent, args, context) => {
+          try {
+            const user = await Account.findById(context.req.user.userId);
+            if (!user.roles.includes(ROLES.ADMIN)) {
+              return res.status(403).json({ msg: "Access denied" });
+            }
+            const account = await Account.findById(args.id);
+            if (!account) {
+              return { success: false, message: "Account not found" };
+            }
+            if (args.kycVerified) {
+              account.kycVerified = args.kycVerified;
+            }
+            if (args.twoFactorAuthEnabled) {
+              account.twoFactorAuthEnabled = args.twoFactorAuthEnabled;
+            }
+            const role = ROLES.ARBITRATION;
+
+            if (!account.kycVerified && !account.twoFactorAuthEnabled)
               return {
                 success: false,
                 message: "Account not kycVerified or not enabled twoFactorAuth",
               };
-            account.arbitration.isArbiter = args.isArbiter;
-          }
+            if (!account.roles.includes(role)) {
+              account.roles.push(role);
+            }
 
-          await account.save();
-          return { success: true, message: "Account updated successfully" };
-        } catch (err) {
-          return { success: false, message: err.message };
+            await account.save();
+            return { success: true, message: "Account updated successfully" };
+          } catch (err) {
+            return { success: false, message: err.message };
+          }
         }
-      },
+      ),
     },
   },
 });

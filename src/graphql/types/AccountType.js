@@ -61,7 +61,6 @@ const WarningType = new GraphQLObjectType({
 const ArbitrationType = new GraphQLObjectType({
   name: "Arbitration",
   fields: {
-    isArbiter: { type: GraphQLBoolean },
     gamesArbitrated: {
       type: new GraphQLList(
         new GraphQLObjectType({
@@ -73,8 +72,6 @@ const ArbitrationType = new GraphQLObjectType({
       ),
     },
     totalGamesArbitrated: { type: GraphQLInt },
-    kycVerified: { type: GraphQLBoolean },
-    twoFactorAuthEnabled: { type: GraphQLBoolean },
   },
 });
 
@@ -108,6 +105,9 @@ const AccountType = new GraphQLObjectType({
     warnings: { type: new GraphQLList(WarningType) },
     arbitration: { type: ArbitrationType },
     oauthProviders: { type: new GraphQLList(OauthProviderType) },
+    kycVerified: { type: GraphQLBoolean },
+    twoFactorSecret: { type: GraphQLString },
+    twoFactorAuthEnabled: { type: GraphQLBoolean },
   },
 });
 

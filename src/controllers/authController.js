@@ -143,7 +143,7 @@ exports.login = async (req, res) => {
       return res.status(400).send("Please verify your email first");
     }
 
-    if (user.arbitration.twoFactorAuthEnabled) {
+    if (user.twoFactorAuthEnabled) {
       if (!otp) {
         return res.status(400).json({ msg: "2FA token is required" });
       }
@@ -168,7 +168,7 @@ exports.login = async (req, res) => {
     res.cookie("refreshToken", refreshToken, { httpOnly: true, secure: true });
     res.status(200).json({
       accessToken,
-      twoFactorAuthEnabled: user.arbitration.twoFactorAuthEnabled,
+      twoFactorAuthEnabled: user.twoFactorAuthEnabled,
     });
   } catch (err) {
     res.status(400).send("Error logging in");
@@ -272,12 +272,12 @@ exports.enable2FA = async (req, res) => {
   const user = await User.findById(req.user.userId);
 
   const secret = speakeasy.generateSecret({ length: 20 });
-  user.arbitration.twoFactorSecret = secret.base32;
-  user.arbitration.twoFactorAuthEnabled = true;
+  user.twoFactorSecret = secret.base32;
+  user.twoFactorAuthEnabled = true;
   await user.save();
 
   const otpAuthUrl = speakeasy.otpauthURL({
-    secret: user.arbitration.twoFactorSecret,
+    secret: user.twoFactorSecret,
     label: user.username,
     issuer: process.env.APP_NAME,
   });
@@ -286,7 +286,7 @@ exports.enable2FA = async (req, res) => {
     if (err) {
       return res.status(500).send("Error generating QR code");
     }
-    res.json({ qrCodeUrl: dataUrl, secret: user.arbitration.twoFactorSecret });
+    res.json({ qrCodeUrl: dataUrl, secret: user.twoFactorSecret });
   });
 };
 
@@ -298,8 +298,8 @@ exports.disable2FA = async (req, res) => {
       return res.status(400).send("2FA is not enabled");
     }
 
-    user.arbitration.twoFactorAuthEnabled = false;
-    user.arbitration.twoFactorSecret = null;
+    user.twoFactorAuthEnabled = false;
+    user.twoFactorSecret = null;
     await user.save();
 
     res.send("2FA disabled successfully");
@@ -313,7 +313,7 @@ exports.verify2FA = async (req, res) => {
   const user = await User.findById(req.user.userId);
 
   const verified = speakeasy.totp.verify({
-    secret: user.arbitration.twoFactorSecret,
+    secret: user.twoFactorSecret,
     encoding: "base32",
     token: otp,
   });

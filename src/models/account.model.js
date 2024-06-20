@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { ROLES_ACCOUNT, SOCIALS_LIST, ROLES } = require("../utils/contants");
 
 const AccountSchema = new mongoose.Schema({
   email: { type: String, unique: true },
@@ -40,7 +41,11 @@ const AccountSchema = new mongoose.Schema({
     },
   ],
   isBaned: { type: Boolean, default: false },
-  isAdmin: { type: Boolean, default: false },
+  roles: {
+    type: [String],
+    enum: ROLES_ACCOUNT,
+    default: [ROLES.PLAYER],
+  },
   warnings: [
     {
       date: { type: Date, default: Date.now },
@@ -49,23 +54,22 @@ const AccountSchema = new mongoose.Schema({
     },
   ],
   arbitration: {
-    isArbiter: { type: Boolean, default: false },
     gamesArbitrated: [
       {
         gameId: { type: mongoose.Schema.Types.ObjectId, ref: "Game" },
       },
     ],
     totalGamesArbitrated: { type: Number, default: 0 },
-    kycVerified: { type: Boolean, default: false },
-    twoFactorSecret: { type: String },
-    twoFactorAuthEnabled: { type: Boolean, default: false },
   },
   oauthProviders: [
     {
-      provider: { type: String, enum: ["facebook", "google", "telegram"] },
+      provider: { type: String, enum: SOCIALS_LIST },
       providerId: { type: String },
     },
   ],
+  kycVerified: { type: Boolean, default: false },
+  twoFactorSecret: { type: String },
+  twoFactorAuthEnabled: { type: Boolean, default: false },
 });
 
 module.exports = mongoose.model("Account", AccountSchema);
