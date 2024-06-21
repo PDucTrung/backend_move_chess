@@ -65,9 +65,24 @@ const checkRoleAdmin = async function (req, res, next) {
   }
 };
 
+
+const checkRoleArbitration = async function (req, res, next) {
+  try {
+    const user = await User.findById(req.user.userId);
+    if (!user.roles.includes(ROLES.ARBITRATION)) {
+      return res.status(403).json({ msg: "Access denied" });
+    }
+
+    next();
+  } catch (err) {
+    res.status(500).json({ msg: "Server error" });
+  }
+};
+
 module.exports = {
   authenticateToken,
   authenticateTokenGraphQL,
   authenticateAdminGraphQL,
   checkRoleAdmin,
+  checkRoleArbitration
 };
