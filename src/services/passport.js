@@ -17,28 +17,45 @@ passport.use(
 
     // returns the authenticated email profile
     async function (request, accessToken, refreshToken, profile, done) {
-      const existMail = await User.findOne({
-        email: profile["emails"][0].value,
-      });
-      let username = profile["name"]["givenName"];
-      const existUsername = await User.findOne({ username: username });
-      if (!existMail) {
-        if (existUsername)
+      const email = profile["emails"][0].value;
+      const provider = profile.provider;
+      const providerId = profile.id;
+
+      const existingUser = await User.findOne({ email: email });
+
+      if (existingUser) {
+        const existingProvider = existingUser.oauthProviders.find(
+          (p) => p.provider === provider && p.providerId === providerId
+        );
+
+        if (!existingProvider) {
+          // Thêm provider mới nếu chưa tồn tại
+          existingUser.oauthProviders.push({ provider, providerId });
+          await existingUser.save();
+        }
+        return done(null, existingUser);
+      } else {
+        let username = profile["name"]["givenName"];
+        const existingUsername = await User.findOne({ username: username });
+
+        if (existingUsername) {
           username = profile["name"]["givenName"] + new Date().getTime();
-        await User.create({
-          email: profile["emails"][0].value,
+        }
+
+        const newUser = await User.create({
+          email: email,
           username: username,
           isVerified: true,
           oauthProviders: [
             {
-              provider: profile.provider,
-              providerId: profile.id,
+              provider: provider,
+              providerId: providerId,
             },
           ],
         });
+
+        return done(null, newUser);
       }
-      const user = await User.findOne({ email: profile["emails"][0].value });
-      return done(null, user);
     }
   )
 );
