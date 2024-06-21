@@ -1,15 +1,33 @@
-const { GraphQLObjectType, GraphQLList, GraphQLString } = require('graphql');
-const TokenType = require('../types/TokenType');
+const {
+  GraphQLObjectType,
+  GraphQLList,
+  GraphQLString,
+  GraphQLInt,
+} = require("graphql");
+const TokenType = require("../types/TokenType");
 const db = require("../../models");
 const Token = db.token;
 
 const TokenQuery = new GraphQLObjectType({
-  name: 'TokenQuery',
+  name: "TokenQuery",
   fields: {
     tokens: {
       type: new GraphQLList(TokenType),
-      resolve() {
-        return Token.find().exec();
+      args: {
+        limit: { type: GraphQLInt },
+        offset: { type: GraphQLInt },
+        sort: { type: GraphQLInt },
+      },
+      resolve(parent, args) {
+        let { limit, offset, sort } = args;
+        if (!limit) limit = 10;
+        if (!offset) offset = 0;
+        if (!sort) sort = -1;
+        return Token.find()
+          .sort({ _id: sort })
+          .skip(offset)
+          .limit(limit)
+          .exec();
       },
     },
     tokenById: {
@@ -21,9 +39,22 @@ const TokenQuery = new GraphQLObjectType({
     },
     tokensByUserId: {
       type: new GraphQLList(TokenType),
-      args: { userId: { type: GraphQLString } },
+      args: {
+        userId: { type: GraphQLString },
+        limit: { type: GraphQLInt },
+        offset: { type: GraphQLInt },
+        sort: { type: GraphQLInt },
+      },
       resolve(parent, args) {
-        return Token.find({ userId: args.userId }).exec();
+        let { limit, offset, sort } = args;
+        if (!limit) limit = 10;
+        if (!offset) offset = 0;
+        if (!sort) sort = -1;
+        return Token.find({ userId: args.userId })
+          .sort({ _id: sort })
+          .skip(offset)
+          .limit(limit)
+          .exec();
       },
     },
   },

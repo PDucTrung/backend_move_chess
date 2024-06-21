@@ -1,4 +1,9 @@
-const { GraphQLObjectType, GraphQLList, GraphQLString } = require("graphql");
+const {
+  GraphQLObjectType,
+  GraphQLList,
+  GraphQLString,
+  GraphQLInt,
+} = require("graphql");
 const AccountType = require("../types/AccountType");
 const { applyMiddleware } = require("../../utils/middleware");
 const {
@@ -13,8 +18,22 @@ const AccountQuery = new GraphQLObjectType({
   fields: {
     accounts: {
       type: new GraphQLList(AccountType),
-      resolve: applyMiddleware(authenticateAdminGraphQL, () => {
-        return Account.find().select("-password").exec();
+      args: {
+        limit: { type: GraphQLInt },
+        offset: { type: GraphQLInt },
+        sort: { type: GraphQLInt },
+      },
+      resolve: applyMiddleware(authenticateAdminGraphQL, (parent, args) => {
+        let { limit, offset, sort } = args;
+        if (!limit) limit = 10;
+        if (!offset) offset = 0;
+        if (!sort) sort = -1;
+        return Account.find()
+          .sort({ _id: sort })
+          .skip(offset)
+          .limit(limit)
+          .select("-password")
+          .exec();
       }),
     },
     accountById: {
@@ -35,8 +54,22 @@ const AccountQuery = new GraphQLObjectType({
     },
     bannedAccounts: {
       type: new GraphQLList(AccountType),
-      resolve: applyMiddleware(authenticateAdminGraphQL, () => {
-        return Account.find({ isBanned: true }).select("-password").exec();
+      args: {
+        limit: { type: GraphQLInt },
+        offset: { type: GraphQLInt },
+        sort: { type: GraphQLInt },
+      },
+      resolve: applyMiddleware(authenticateAdminGraphQL, (parent, args) => {
+        let { limit, offset, sort } = args;
+        if (!limit) limit = 10;
+        if (!offset) offset = 0;
+        if (!sort) sort = -1;
+        return Account.find({ isBanned: true })
+          .sort({ _id: sort })
+          .skip(offset)
+          .limit(limit)
+          .select("-password")
+          .exec();
       }),
     },
   },

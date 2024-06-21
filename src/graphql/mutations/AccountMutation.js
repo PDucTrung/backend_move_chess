@@ -171,7 +171,7 @@ const AccountMutation = new GraphQLObjectType({
         }
       },
     },
-    updateArbitration: {
+    addRoleArbitration: {
       type: MutationResponseType,
       args: {
         id: { type: GraphQLString },
@@ -198,6 +198,90 @@ const AccountMutation = new GraphQLObjectType({
             if (!account.roles.includes(role)) {
               account.roles.push(role);
             }
+
+            await account.save();
+            return { success: true, message: "Account updated successfully" };
+          } catch (err) {
+            return { success: false, message: err.message };
+          }
+        }
+      ),
+    },
+    removeRoleAbitration: {
+      type: MutationResponseType,
+      args: {
+        id: { type: GraphQLString },
+      },
+      resolve: applyMiddleware(
+        authenticateAdminGraphQL,
+        async (parent, args, context) => {
+          try {
+            const account = await Account.findById(args.id);
+            if (!account) {
+              return { success: false, message: "Account not found" };
+            }
+            const role = ROLES.ARBITRATION;
+            account.roles = account.roles.filter((r) => r !== role);
+
+            await account.save();
+            return { success: true, message: "Account updated successfully" };
+          } catch (err) {
+            return { success: false, message: err.message };
+          }
+        }
+      ),
+    },
+    addRoleAdmin: {
+      type: MutationResponseType,
+      args: {
+        id: { type: GraphQLString },
+      },
+      resolve: applyMiddleware(
+        authenticateAdminGraphQL,
+        async (parent, args, context) => {
+          try {
+            // const user = await Account.findById(context.req.user.userId);
+            // if (!user.roles.includes(ROLES.ADMIN)) {
+            //   return res.status(403).json({ msg: "Access denied" });
+            // }
+            const account = await Account.findById(args.id);
+            if (!account) {
+              return { success: false, message: "Account not found" };
+            }
+            const role = ROLES.ADMIN;
+
+            if (!account.kycVerified && !account.twoFactorAuthEnabled)
+              return {
+                success: false,
+                message: "Account not kycVerified or not enabled twoFactorAuth",
+              };
+            if (!account.roles.includes(role)) {
+              account.roles.push(role);
+            }
+
+            await account.save();
+            return { success: true, message: "Account updated successfully" };
+          } catch (err) {
+            return { success: false, message: err.message };
+          }
+        }
+      ),
+    },
+    removeRoleAdmin: {
+      type: MutationResponseType,
+      args: {
+        id: { type: GraphQLString },
+      },
+      resolve: applyMiddleware(
+        authenticateAdminGraphQL,
+        async (parent, args, context) => {
+          try {
+            const account = await Account.findById(args.id);
+            if (!account) {
+              return { success: false, message: "Account not found" };
+            }
+            const role = ROLES.ADMIN;
+            account.roles = account.roles.filter((r) => r !== role);
 
             await account.save();
             return { success: true, message: "Account updated successfully" };

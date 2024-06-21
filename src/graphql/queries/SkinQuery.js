@@ -1,15 +1,29 @@
-const { GraphQLObjectType, GraphQLList, GraphQLString } = require('graphql');
-const SkinType = require('../types/SkinType');
+const {
+  GraphQLObjectType,
+  GraphQLList,
+  GraphQLString,
+  GraphQLInt,
+} = require("graphql");
+const SkinType = require("../types/SkinType");
 const db = require("../../models");
 const Skin = db.skin;
 
 const SkinQuery = new GraphQLObjectType({
-  name: 'SkinQuery',
+  name: "SkinQuery",
   fields: {
     skins: {
       type: new GraphQLList(SkinType),
-      resolve() {
-        return Skin.find().exec();
+      args: {
+        limit: { type: GraphQLInt },
+        offset: { type: GraphQLInt },
+        sort: { type: GraphQLInt },
+      },
+      resolve(parent, args) {
+        let { limit, offset, sort } = args;
+        if (!limit) limit = 10;
+        if (!offset) offset = 0;
+        if (!sort) sort = -1;
+        return Skin.find().sort({ _id: sort }).skip(offset).limit(limit).exec();
       },
     },
     skinById: {
@@ -21,9 +35,22 @@ const SkinQuery = new GraphQLObjectType({
     },
     skinsByType: {
       type: new GraphQLList(SkinType),
-      args: { type: { type: GraphQLString } },
+      args: {
+        type: { type: GraphQLString },
+        limit: { type: GraphQLInt },
+        offset: { type: GraphQLInt },
+        sort: { type: GraphQLInt },
+      },
       resolve(parent, args) {
-        return Skin.find({ type: args.type }).exec();
+        let { limit, offset, sort } = args;
+        if (!limit) limit = 10;
+        if (!offset) offset = 0;
+        if (!sort) sort = -1;
+        return Skin.find({ type: args.type })
+          .sort({ _id: sort })
+          .skip(offset)
+          .limit(limit)
+          .exec();
       },
     },
   },
