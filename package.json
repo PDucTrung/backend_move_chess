@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon app.js"
+    "start": "nodemon app.js",
+    "wss": "nodemon wssServer.js"
   },
   "author": "trung",
   "license": "ISC",
@@ -30,7 +31,10 @@
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "qrcode": "^1.5.3",
+    "socket.io": "^4.7.5",
     "speakeasy": "^2.0.0",
-    "validator": "^13.12.0"
+    "uuid": "^10.0.0",
+    "validator": "^13.12.0",
+    "ws": "^8.17.1"
   }
 }
