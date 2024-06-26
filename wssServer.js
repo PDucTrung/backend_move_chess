@@ -63,12 +63,9 @@ wss.on("connection", (ws) => {
       case "OFFER":
       case "ANSWER":
       case "ICE_CANDIDATE":
+      case "STOP_SHARING":
         wss.clients.forEach((client) => {
-          if (
-            client.roomId === ws.roomId &&
-            client.userId !== ws.userId &&
-            client.readyState === WebSocket.OPEN
-          ) {
+          if (client.roomId === ws.roomId && client.userId !== ws.userId && client.readyState === WebSocket.OPEN) {
             client.send(JSON.stringify(data));
           }
         });
