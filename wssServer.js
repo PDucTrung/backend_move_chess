@@ -57,7 +57,13 @@ wss.on("connection", (ws) => {
           await room.save();
           ws.roomId = data.roomId;
           ws.userId = data.userId;
-          ws.send(JSON.stringify({ type: "ROOM_JOINED", roomId: data.roomId, streams: activeStreams[data.roomId] || [] }));
+          ws.send(
+            JSON.stringify({
+              type: "ROOM_JOINED",
+              roomId: data.roomId,
+              streams: activeStreams[data.roomId] || [],
+            })
+          );
         } else {
           ws.send(JSON.stringify({ type: "ERROR", message: "Room not found" }));
         }
@@ -68,7 +74,11 @@ wss.on("connection", (ws) => {
       case "STOP_SHARING":
       case "REQUEST_OFFER":
         wss.clients.forEach((client) => {
-          if (client.roomId === ws.roomId && client.userId !== ws.userId && client.readyState === WebSocket.OPEN) {
+          if (
+            client.roomId === ws.roomId &&
+            client.userId !== ws.userId &&
+            client.readyState === WebSocket.OPEN
+          ) {
             client.send(JSON.stringify(data));
           }
         });
@@ -81,7 +91,9 @@ wss.on("connection", (ws) => {
         break;
       case "STREAM_STOPPED":
         if (activeStreams[ws.roomId]) {
-          activeStreams[ws.roomId] = activeStreams[ws.roomId].filter(stream => stream.userId !== data.userId);
+          activeStreams[ws.roomId] = activeStreams[ws.roomId].filter(
+            (stream) => stream.userId !== data.userId
+          );
         }
         break;
     }
