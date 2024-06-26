@@ -29,6 +29,8 @@ mongoose
     process.exit();
   });
 
+const activeStreams = {};
+
 wss.on("connection", (ws) => {
   console.log("New client connected");
 
@@ -41,11 +43,11 @@ wss.on("connection", (ws) => {
         const newRoom = new Room({
           roomId,
           users: [data.userId],
-          streamData: null,
         });
         await newRoom.save();
         ws.roomId = roomId;
         ws.userId = data.userId;
+        activeStreams[roomId] = [];
         ws.send(JSON.stringify({ type: "ROOM_CREATED", roomId }));
         break;
       case "JOIN_ROOM":
@@ -55,7 +57,7 @@ wss.on("connection", (ws) => {
           await room.save();
           ws.roomId = data.roomId;
           ws.userId = data.userId;
-          ws.send(JSON.stringify({ type: "ROOM_JOINED", roomId: data.roomId }));
+          ws.send(JSON.stringify({ type: "ROOM_JOINED", roomId: data.roomId, streams: activeStreams[data.roomId] || [] }));
         } else {
           ws.send(JSON.stringify({ type: "ERROR", message: "Room not found" }));
         }
@@ -64,11 +66,23 @@ wss.on("connection", (ws) => {
       case "ANSWER":
       case "ICE_CANDIDATE":
       case "STOP_SHARING":
+      case "REQUEST_OFFER":
         wss.clients.forEach((client) => {
           if (client.roomId === ws.roomId && client.userId !== ws.userId && client.readyState === WebSocket.OPEN) {
             client.send(JSON.stringify(data));
           }
         });
+        break;
+      case "STREAM_STARTED":
+        if (!activeStreams[ws.roomId]) {
+          activeStreams[ws.roomId] = [];
+        }
+        activeStreams[ws.roomId].push(data.streamInfo);
+        break;
+      case "STREAM_STOPPED":
+        if (activeStreams[ws.roomId]) {
+          activeStreams[ws.roomId] = activeStreams[ws.roomId].filter(stream => stream.userId !== data.userId);
+        }
         break;
     }
   });
