@@ -1,3 +1,4 @@
+// wssServer:
 require("dotenv").config();
 const { WebSocketServer, WebSocket } = require("ws");
 const { v4: uuidv4 } = require("uuid");
@@ -47,7 +48,7 @@ wss.on("connection", (ws) => {
         await newRoom.save();
         ws.roomId = roomId;
         ws.userId = data.userId;
-        activeStreams[roomId] = [];
+        activeStreams[roomId] = {};
         ws.send(JSON.stringify({ type: "ROOM_CREATED", roomId }));
         break;
       case "JOIN_ROOM":
@@ -61,7 +62,7 @@ wss.on("connection", (ws) => {
             JSON.stringify({
               type: "ROOM_JOINED",
               roomId: data.roomId,
-              streams: activeStreams[data.roomId] || [],
+              streams: Object.values(activeStreams[data.roomId] || {}).flat(),
             })
           );
         } else {
@@ -85,15 +86,18 @@ wss.on("connection", (ws) => {
         break;
       case "STREAM_STARTED":
         if (!activeStreams[ws.roomId]) {
-          activeStreams[ws.roomId] = [];
+          activeStreams[ws.roomId] = {};
         }
-        activeStreams[ws.roomId].push(data.streamInfo);
+        if (!activeStreams[ws.roomId][ws.userId]) {
+          activeStreams[ws.roomId][ws.userId] = [];
+        }
+        activeStreams[ws.roomId][ws.userId].push(data.streamInfo);
         break;
       case "STREAM_STOPPED":
-        if (activeStreams[ws.roomId]) {
-          activeStreams[ws.roomId] = activeStreams[ws.roomId].filter(
-            (stream) => stream.userId !== data.userId
-          );
+        if (activeStreams[ws.roomId] && activeStreams[ws.roomId][ws.userId]) {
+          activeStreams[ws.roomId][ws.userId] = activeStreams[ws.roomId][
+            ws.userId
+          ].filter((stream) => stream.type !== data.streamInfo.type);
         }
         break;
     }
@@ -106,6 +110,9 @@ wss.on("connection", (ws) => {
       if (room) {
         room.users = room.users.filter((userId) => userId !== ws.userId);
         await room.save();
+      }
+      if (activeStreams[ws.roomId] && activeStreams[ws.roomId][ws.userId]) {
+        delete activeStreams[ws.roomId][ws.userId];
       }
     }
   });
