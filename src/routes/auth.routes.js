@@ -29,5 +29,5 @@ module.exports = function (app) {
   app.post("/reset-password/:token", controller.resetPassword);
   app.post("/auth/enable2FA", authenticateToken, controller.enable2FA);
   app.post("/auth/disable2FA", authenticateToken, controller.disable2FA);
-  app.post("/auth/verify2FA", authenticateToken, controller.verify2FA);
+  app.post("/auth/verify2FA", controller.verify2FA);
 };

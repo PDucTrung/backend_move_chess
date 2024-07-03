@@ -144,27 +144,11 @@ exports.login = async (req, res) => {
     }
 
     if (user.twoFactorAuthEnabled) {
-      if (!otp) {
-        return res.status(400).json({
-          twoFactorAuthEnabled: user.twoFactorAuthEnabled,
-          msg: "2FA token is required",
-        });
-      }
-
-      const verified = speakeasy.totp.verify({
-        secret: user.twoFactorSecret,
-        encoding: "base32",
-        token: otp,
+      return res.status(200).json({
+        userId: user._id,
+        twoFactorAuthEnabled: user.twoFactorAuthEnabled,
+        msg: "2FA token is required",
       });
-
-      if (!verified) {
-        return res
-          .status(400)
-          .json({
-            twoFactorAuthEnabled: user.twoFactorAuthEnabled,
-            msg: "Invalid 2FA token",
-          });
-      }
     }
 
     const accessToken = generateAccessToken(user._id);
@@ -316,12 +300,12 @@ exports.disable2FA = async (req, res) => {
 };
 
 exports.verify2FA = async (req, res) => {
-  const { otp } = req.body;
-  const user = await User.findById(req.user.userId);
+  const { userId, otp } = req.body;
+  const user = await User.findById(userId);
 
   const verified = speakeasy.totp.verify({
     secret: user.twoFactorSecret,
-    encoding: "base32",
+    // encoding: "base32",
     token: otp,
   });
 
@@ -329,10 +313,14 @@ exports.verify2FA = async (req, res) => {
     return res.status(401).send("Invalid OTP");
   }
 
-  const authToken = jwt.sign(
-    { userId: user._id, twoFactorVerified: true },
-    JWT_ACCESS_SECRET,
-    { expiresIn: "1h" }
-  );
-  res.status(200).send({ authToken, msg: "2FA verified successfully" });
+  const accessToken = generateAccessToken(user._id);
+  const refreshToken = generateRefreshToken(user._id);
+
+  // Save refresh token in database
+  await new Token({ userId: user._id, token: refreshToken }).save();
+
+  res.cookie("refreshToken", refreshToken, { httpOnly: true, secure: true });
+  res.status(200).json({
+    accessToken,
+  });
 };
