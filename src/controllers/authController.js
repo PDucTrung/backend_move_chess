@@ -285,7 +285,7 @@ exports.disable2FA = async (req, res) => {
   try {
     const user = await User.findById(req.user.userId);
 
-    if (!user.twoFactorEnabled) {
+    if (!user.twoFactorAuthEnabled) {
       return res.status(400).send("2FA is not enabled");
     }
 
