@@ -100,6 +100,24 @@ wss.on("connection", (ws) => {
           ].filter((stream) => stream.type !== data.streamInfo.type);
         }
         break;
+      case "LEAVE_ROOM":
+        const leaveRoom = await Room.findOne({ roomId: data.roomId });
+        if (leaveRoom) {
+          leaveRoom.users = leaveRoom.users.filter(
+            (userId) => userId !== data.userId
+          );
+          await leaveRoom.save();
+          ws.send(JSON.stringify({ type: "ROOM_LEFT", roomId: data.roomId }));
+          if (
+            activeStreams[data.roomId] &&
+            activeStreams[data.roomId][data.userId]
+          ) {
+            delete activeStreams[data.roomId][data.userId];
+          }
+        } else {
+          ws.send(JSON.stringify({ type: "ERROR", message: "Room not found" }));
+        }
+        break;
     }
   });
 
