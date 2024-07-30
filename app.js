@@ -67,6 +67,8 @@ app.get("/", (req, res) => {
 require("./src/routes/auth.routes.js")(app);
 require("./src/routes/user.routes.js")(app);
 require("./src/routes/openai.routes.js")(app);
+require("./src/routes/game.routes.js")(app);
+require("./src/routes/tournament.routes.js")(app);
 
 const DATABASE_HOST = dbConfig.DB_HOST;
 const DATABASE_PORT = dbConfig.DB_PORT;

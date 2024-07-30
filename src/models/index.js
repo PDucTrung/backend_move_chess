@@ -9,5 +9,6 @@ db.skin = require("./skin.model");
 db.token = require("./token.model");
 db.bannedPlayer = require("./bannedPlayer.model");
 db.room = require("./room.model");
+db.tournament = require("./tournament.model");
 
 module.exports = db;
