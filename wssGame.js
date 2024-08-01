@@ -171,7 +171,7 @@ io.on("connection", (socket) => {
         };
         await Game.findOneAndUpdate({ game_id: data.game_id }, updateDoc);
         socket.join(data.game_id);
-      } else if (board.player1 && socket.user !== board.player1) {
+      } else if (board.player1 !== "" && socket.user !== board.player1) {
         const updateDoc = {
           $set: {
             player2: socket.user,
@@ -179,7 +179,7 @@ io.on("connection", (socket) => {
         };
         await Game.findOneAndUpdate({ game_id: data.game_id }, updateDoc);
         socket.join(data.game_id);
-      } else if (board.player2 && socket.user !== board.player2) {
+      } else if (board.player2 !== "" && socket.user !== board.player2) {
         const updateDoc = {
           $set: {
             player1: socket.user,
